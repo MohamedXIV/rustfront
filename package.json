@@ -1,0 +1,23 @@
+{
+  "name": "rustfront",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Rustfront: online 1v1 top-down pixel-art card RTS",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit && tsc -p server/tsconfig.json --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "^4.2.1",
+    "spacetimedb": "^2.14.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}
