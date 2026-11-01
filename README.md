@@ -14,6 +14,7 @@ npm install
 npm run dev        # client at http://localhost:5173
 npm run typecheck  # client and server module
 npm test           # gameplay rule tests (vitest)
+npm run test:live  # two-client multiplayer test. Needs a local SpacetimeDB server with the module published (CI does this)
 npm run build      # production build into dist/
 npm run preview    # serve dist/
 ```
@@ -23,5 +24,6 @@ npm run preview    # serve dist/
   - `shared/data/` roster definitions (structures, units, abilities, cards)
   - `shared/rules/` economy, combat, match outcome, waves, hand state
 - `src/` Phaser client
-- `server/` SpacetimeDB module (typechecks; publishing needs the SpacetimeDB CLI)
+- `server/` SpacetimeDB module: rooms, seats, battles stored as rows, reducers, the scheduled tick, and the `my_hand` view. Publishing needs the SpacetimeDB CLI.
+- `live/` two-client multiplayer test against a running server
 - `tests/` vitest suites

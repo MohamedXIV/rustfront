@@ -167,6 +167,15 @@ Gun Truck is merged into Assault Buggy. The Headquarters is not a card.
 - Projectiles resolve instantly for now. Travel time for physical projectiles is not modeled yet.
 - Headquarters destruction ends the match at once. Both Headquarters falling in the same tick is a draw.
 
+## Server Model (implemented in Stage 2b)
+
+- A room holds up to two seats. The creator plays red and the joiner plays blue. When both are ready, a battle starts with a random seed.
+- A battle is stored as rows: `battle` (scalars, RNG state, points, wave counters), `entity` and `pending_ability` (public), `entity_ai` and `card` (private). Every reducer and the tick load the battle, run the shared simulation, and write back only the rows that changed.
+- Hands are private. The `my_hand` view returns only the caller's own team cards.
+- One scheduled reducer, `tick`, advances every running battle by 100 ms. The cost is a full read of each active battle's rows per tick. That is acceptable for the MVP and should be measured before scaling.
+- Actions go through the shared rules (`tryPlayCard`, `tryStoreCard`). A rejected action throws, and nothing changes.
+- Not yet built: reconnect handling, forfeit, leaving a room, a configurable tick rate (currently fixed at `TICK_MS`), and travel time for projectiles.
+
 ## Open Decisions
 
 1. How the Scrappunk → Dieselpunk progression works in gameplay without pay-to-win.
