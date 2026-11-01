@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  client:
+    name: Client, shared rules, tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  spacetime:
+    name: SpacetimeDB module publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install server module dependencies
+        run: npm install --prefix server
+      - name: Install SpacetimeDB CLI
+        run: |
+          curl -sSf https://install.spacetimedb.com | sh -s -- -y
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.spacetime/bin" >> "$GITHUB_PATH"
+      - name: Check CLI version
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
+          spacetime version
+      - name: Start local SpacetimeDB
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
+          nohup spacetime start > "$RUNNER_TEMP/spacetime.log" 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/v1/ping > /dev/null; then echo "server up"; exit 0; fi
+            sleep 2
+          done
+          echo "server did not start"; cat "$RUNNER_TEMP/spacetime.log"; exit 1
+      - name: Publish module
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
+          spacetime publish rustfront-ci --project-path server --server local -y
+      - name: Generate client bindings
+        run: |
+          export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
+          spacetime generate --lang typescript --out-dir src/module_bindings --project-path server
+      - name: Show server log on failure
+        if: failure()
+        run: cat "$RUNNER_TEMP/spacetime.log" || true
