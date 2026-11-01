@@ -56,7 +56,7 @@ export function snapshotOf(state: BattleState, viewer: TeamId): BattleSnapshot {
     ended: state.winner !== null,
     winner: state.winner,
     endReason: state.endReason,
-    points: { red: state.teams.red.points, blue: state.teams.blue.points },
+    myPoints: state.teams[viewer].points,
     entities: viewEntitiesOf(state),
     pending,
     cards,

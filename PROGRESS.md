@@ -3,7 +3,7 @@
 Last updated: 2026-11-02
 
 ## Current stage
-Stage 3 (browser client) is built. The offline demo runs end to end in headless Chromium. The online path type-checks against the committed bindings, but it has not yet been run in a browser against a live server. Before any real two-player test, the server must stop publishing hidden information (see Known gaps).
+Stage 3 (browser client) is built. The offline demo runs end to end in headless Chromium. The server no longer publishes hidden information: `battle` and `entity` are private, and each player reads per-viewer views. The online path type-checks against the regenerated bindings and the live two-client test passes in CI, but it has not yet been run in a browser against a live server.
 
 ## Done
 - Repository with push access. Design v0.1 in `DESIGN.md`, including the simulation and server model.
@@ -24,10 +24,17 @@ Stage 3 (browser client) is built. The offline demo runs end to end in headless 
   - Pure view logic (`src/game/view.ts`): geometry, hand layout, visibility, interpolation, outcome, placement hints. Placement hints are tested against the sim's own validators.
   - Placeholder art only: programmatic shapes in team colours. The pixel-art pipeline is a later stage.
 - Live test (`live/`): two clients run the lobby, start a battle, deploy a unit, get rejected when playing the other player's card, store a card, and watch the tick advance. It runs in the CI `spacetime` job against SpacetimeDB 2.14.
+- Hidden information is private. `battle` and `entity` are private tables. Each player reads:
+  - `my_battle`: their own battle row, with only their own points.
+  - `my_entities`: their own pieces, plus enemy structures and units that are not concealed. Enemy mines are never included.
+  - `my_hand`: their own cards.
+  The client subscribes to these views only. The live test checks that the opponent's points, the RNG state, and enemy mines are absent.
 - Repository hygiene: `server/node_modules` was committed by mistake in `95846c9`. It was untracked in `6839180`. History was not rewritten.
 
 ## Verified
 - CI green on `69eda71` (before the client): `client` job (typecheck, tests, build), and `spacetime` job (CLI install, server start, module publish, bindings generation, live typecheck, live two-client test).
+- CI green on `1ed081e`: the server with private tables and per-viewer views, the bot-regenerated bindings, and the live two-client test against them.
+- Headless Chromium on `?demo` after the client moved to the views: renders, the HUD shows the viewer's own points only, a match ends with the overlay, and there are no page errors.
 - Unit tests: 12 files, 113 tests. These include:
   - Snapshot round trip, and a mid-match save and restore that continues identically.
   - A fairness regression test: mirrored units must fire on the same tick.
@@ -59,10 +66,7 @@ Final check, 120 scripted matches with mirrored, non-integer deploy points: blue
 Caveat: the scripted bot only plays units. It has no structures, abilities, or decisions. This checks symmetry, not balance. Real balance needs playtesting and a stronger bot.
 
 ## Known gaps
-- **Hidden information is published.** The server's public tables contain data the client must not see:
-  - `entity` includes enemy mines and enemy units that are concealed. The client hides them on screen, but a modified client can read their positions.
-  - `battle` includes both players' points.
-  - The fix is to move hidden state into private tables and serve per-viewer views (for example `my_entities`, filtered by team, concealment, and mines), and to keep points out of the public battle row. This needs a server change, regenerated bindings, and a live test update. It is the next task.
+- **Entity ids leak a count.** Entity ids are sequential, so gaps in `my_entities` reveal how many enemy mines and concealed units exist. Their positions and types stay hidden. Fixing this needs non-sequential ids.
 - The browser client against a live server is not covered by CI. The live Node test covers the reducers and views only.
 - Projectiles resolve instantly. Physical travel time and interception timing are not modelled.
 - No reconnect grace period, no forfeit, and no way to leave a room while its battle is running. If one player disconnects, the battle keeps running until it ends on time or until the other side destroys the Headquarters.
@@ -72,10 +76,9 @@ Caveat: the scripted bot only plays units. It has no structures, abilities, or d
 - Balance is untested. The demo bot and the scripted test bot cover only a few card types.
 
 ## Next
-1. Hidden information (see Known gaps). Keep the public tables for what everyone may see, and add per-viewer views for the rest.
-2. Playtest two real clients against a local server. Decide whether CI should run a browser test for the online flow.
-3. Pixel-art pipeline: decide between programmatic generation and image tools, then make the first sprites.
-4. Stage 4 candidates: reconnect and forfeit rules, projectile travel time, configurable tick rate.
+1. Playtest two real clients against a local server. Decide whether CI should run a browser test for the online flow.
+2. Pixel-art pipeline: decide between programmatic generation and image tools, then make the first sprites.
+3. Stage 4 candidates: reconnect and forfeit rules, projectile travel time, configurable tick rate, non-sequential entity ids.
 
 ## Open design decisions
 See "Open Decisions" in `DESIGN.md`. Still open:

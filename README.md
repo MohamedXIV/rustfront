@@ -36,6 +36,6 @@ npm run preview    # serve dist/
   - `src/render/` drawing helpers. Placeholder art for now.
   - `src/ui/` buttons and toasts
   - `src/module_bindings/` generated client bindings. Committed. CI regenerates them on pushes to `main`.
-- `server/` SpacetimeDB module: rooms, seats, battles stored as rows, reducers, the scheduled tick, and the `my_hand` view. Publishing needs the SpacetimeDB CLI.
+- `server/` SpacetimeDB module: rooms, seats, battles and entities stored as private rows, reducers, the scheduled tick, and the per-viewer views `my_battle`, `my_entities` and `my_hand`. Publishing needs the SpacetimeDB CLI.
 - `live/` two-client multiplayer test against a running server
 - `tests/` vitest suites

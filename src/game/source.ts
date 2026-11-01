@@ -42,7 +42,8 @@ export interface BattleSnapshot {
   ended: boolean;
   winner: TeamId | 'draw' | null;
   endReason: 'hq_destroyed' | 'time_limit' | null;
-  points: Record<TeamId, number>;
+  /** The viewer's own points. The opponent's balance is private and is never sent to this client. */
+  myPoints: number;
   /** Every entity the server publishes. The screen decides what to show (see view.isVisibleTo). */
   entities: ViewEntity[];
   pending: ViewPending[];

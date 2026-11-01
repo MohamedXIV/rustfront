@@ -249,7 +249,9 @@ describe('demo battle', () => {
     const redIds = new Set(state.teams.red.hand.hand.map((c) => c.instanceId));
     expect(snap.cards.length).toBe(redIds.size);
     for (const card of snap.cards) expect(redIds.has(card.instanceId)).toBe(true);
-    expect(snap.points.red).toBe(state.teams.red.points);
+    expect(snap.myPoints).toBe(state.teams.red.points);
+    // The opponent's balance is never part of the viewer's snapshot.
+    expect(snap).not.toHaveProperty('points');
     expect(snap.ended).toBe(false);
   });
 

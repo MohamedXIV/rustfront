@@ -32,11 +32,9 @@ export function lobbyOf(session: Session): LobbyState {
   const seatRow = [...db.seat.iter()].find((s) => s.identity.toHexString() === me) ?? null;
   const roomRow = seatRow ? ([...db.room.iter()].find((r) => r.id === seatRow.roomId) ?? null) : null;
 
-  let activeBattleId: bigint | null = null;
-  if (roomRow && roomRow.status === 'playing' && roomRow.battleId !== 0n) {
-    const battle = [...db.battle.iter()].find((b) => b.id === roomRow.battleId);
-    if (battle && battle.status === 'active') activeBattleId = battle.id;
-  }
+  // my_battle holds at most one row: this player's battle, with only their own points.
+  const myBattle = [...db.myBattle.iter()][0] ?? null;
+  const activeBattleId = roomRow && myBattle && myBattle.status === 'active' ? myBattle.id : null;
 
   const seats: LobbySeat[] = roomRow
     ? [...db.seat.iter()]

@@ -3,14 +3,18 @@
 import { SPACETIME_DB, SPACETIME_URI } from '../config';
 import { DbConnection } from '../module_bindings';
 
-/** Every public table, plus the caller's private hand. Each query must parse on the server. */
+/**
+ * Public tables, plus the caller's own views: their battle (own points only), the entities they may see,
+ * and their hand. Battle and entity rows are private on the server, so nothing hidden reaches this client.
+ * Each query must parse on the server.
+ */
 const SUBSCRIPTIONS = [
   'SELECT * FROM player',
   'SELECT * FROM room',
   'SELECT * FROM seat',
-  'SELECT * FROM battle',
-  'SELECT * FROM entity',
   'SELECT * FROM pending_ability',
+  'SELECT * FROM my_battle',
+  'SELECT * FROM my_entities',
   'SELECT * FROM my_hand',
 ];
 
@@ -81,9 +85,9 @@ function open(): Promise<Session> {
         hook(conn.db.player, changed);
         hook(conn.db.room, changed);
         hook(conn.db.seat, changed);
-        hook(conn.db.battle, changed);
-        hook(conn.db.entity, changed);
         hook(conn.db.pendingAbility, changed);
+        hook(conn.db.myBattle, changed);
+        hook(conn.db.myEntities, changed);
         hook(conn.db.myHand, changed);
 
         conn.subscriptionBuilder()

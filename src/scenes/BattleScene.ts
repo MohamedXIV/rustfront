@@ -231,7 +231,6 @@ export class BattleScene extends Phaser.Scene {
     g.clear();
     const rects = handRects();
     const view = handView(s.cards);
-    const me = this.source.myTeam;
 
     for (let i = 0; i < HAND_SLOTS; i++) {
       const rect = i < 3 ? rects.hand[i]! : rects.stored;
@@ -244,7 +243,7 @@ export class BattleScene extends Phaser.Scene {
       const info = cardInfo(card.cardId);
       drawCard(g, rect, info.category, {
         selected: this.selected === card.instanceId,
-        affordable: affordable(info.cost, s.points[me]),
+        affordable: affordable(info.cost, s.myPoints),
         sending: this.inFlight.has(card.instanceId),
       });
       this.setCardLabels(i, card, info);
@@ -263,7 +262,7 @@ export class BattleScene extends Phaser.Scene {
     const g = this.hudGfx;
     g.clear();
 
-    this.say('mine', `YOU · ${me.toUpperCase()}   PTS ${Math.floor(s.points[me])}`);
+    this.say('mine', `YOU · ${me.toUpperCase()}   PTS ${Math.floor(s.myPoints)}`);
     this.say('enemy', `ENEMY · ${enemy.toUpperCase()}`);
     this.say('clock', formatClock(timeLeftMs(s.elapsedMs)));
     this.say('phase', `${phaseLabel(matchPhase(s.elapsedMs))} · ${incomeLabel(s.elapsedMs)}`);
@@ -368,7 +367,7 @@ export class BattleScene extends Phaser.Scene {
     const s = this.snap;
     if (!s || this.inFlight.has(card.instanceId)) return;
     const info = cardInfo(card.cardId);
-    if (!affordable(info.cost, s.points[this.source.myTeam])) {
+    if (!affordable(info.cost, s.myPoints)) {
       toast(this, `Not enough points. ${info.name} costs ${info.cost}.`, 'error');
       return;
     }

@@ -56,11 +56,11 @@ class OnlineBattle implements BattleSource {
 
 function build(session: Session, battleId: bigint): BattleSnapshot | null {
   const { db } = session.conn;
-  const battle = [...db.battle.iter()].find((row) => row.id === battleId);
+  const battle = [...db.myBattle.iter()].find((row) => row.id === battleId);
   if (!battle) return null;
 
   const entities: ViewEntity[] = [];
-  for (const e of db.entity.iter()) {
+  for (const e of db.myEntities.iter()) {
     if (e.battleId !== battleId) continue;
     entities.push({
       id: e.id,
@@ -110,7 +110,7 @@ function build(session: Session, battleId: bigint): BattleSnapshot | null {
     ended: battle.status === 'ended',
     winner: battle.winner === '' ? null : (battle.winner as TeamId | 'draw'),
     endReason: battle.endReason === '' ? null : (battle.endReason as 'hq_destroyed' | 'time_limit'),
-    points: { red: battle.redPoints, blue: battle.bluePoints },
+    myPoints: battle.points,
     entities,
     pending,
     cards,
