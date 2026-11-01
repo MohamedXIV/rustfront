@@ -1,4 +1,4 @@
-// Advances the battle by one fixed step. Order: waves, abilities, fields, units, mines, deaths, outcome.
+// Advances the battle by one fixed step. Order: waves, abilities, fields, units (attack, then move), mines, deaths, outcome.
 import { addPoints, killReward, PHASE_MS, WAVE_INTERVAL_MS } from '../rules/economy';
 import { resolveTimeLimit, winnerWhenHqDestroyed } from '../rules/match';
 import type { TeamId } from '../types';
@@ -19,6 +19,13 @@ import {
 import { angleFrom, distance, moveToward, type Vec2 } from './geometry';
 import { buildBlocked, findPath } from './pathfinding';
 import { deliverWave, hqHp, TEAMS, type BattleState, type Entity } from './state';
+
+/** A unit's turn and move, applied after every attack in the tick has resolved. */
+interface Pending {
+  e: Entity;
+  facing?: number;
+  move?: { goal: Vec2; speed: number };
+}
 
 export function stepBattle(state: BattleState, dtMs: number = TICK_MS): void {
   if (state.winner !== null) return;
@@ -41,24 +48,38 @@ export function stepBattle(state: BattleState, dtMs: number = TICK_MS): void {
 
   const blocked = buildBlocked(state);
   const ids = [...state.entities.keys()].sort((a, b) => a - b);
+
+  // Phase 1: everyone attacks using positions and facings from the start of the tick. Shots land
+  // immediately, but nobody moves or turns yet. Otherwise the order of ids decides who steps into
+  // range first and so gets shot first, which gave one side a systematic advantage.
+  const pending: Pending[] = [];
   for (const id of ids) {
     const e = state.entities.get(id);
-    if (!e || e.hp <= 0) continue;
-    updateEntity(state, e, dtMs, blocked);
+    if (!e) continue;
+    const p = act(state, e, dtMs);
+    if (p) pending.push(p);
+  }
+
+  // Phase 2: turn and move. Units do not collide, so the order here does not matter.
+  for (const p of pending) {
+    if (p.e.hp <= 0) continue;
+    if (p.facing !== undefined) p.e.facing = p.facing;
+    if (p.move) moveAlong(p.e, p.move.goal, p.move.speed, dtMs, blocked);
   }
 
   triggerMines(state);
   settleDeaths(state);
 }
 
-function updateEntity(state: BattleState, e: Entity, dt: number, blocked: Uint8Array): void {
+/** Attacks for one entity this tick. Returns the turn and move to apply after the tick's attacks. */
+function act(state: BattleState, e: Entity, dt: number): Pending | null {
   e.cooldownMs = Math.max(0, e.cooldownMs - dt);
   e.repairCooldownMs = Math.max(0, e.repairCooldownMs - dt);
-  if (e.kind === 'mine') return;
+  if (e.kind === 'mine') return null;
 
   const def = defOf(e);
-  if (def.category === 'ability') return;
-  if (e.disabledUntilMs > state.elapsedMs) return;
+  if (def.category === 'ability') return null;
+  if (e.disabledUntilMs > state.elapsedMs) return null;
 
   if (def.repair && e.repairCooldownMs <= 0) {
     repairPulse(state, e);
@@ -68,11 +89,11 @@ function updateEntity(state: BattleState, e: Entity, dt: number, blocked: Uint8A
   const weapon = weaponOf(e);
 
   if (def.category === 'structure') {
-    if (!weapon || e.cooldownMs > 0) return;
+    if (!weapon || e.cooldownMs > 0) return null;
     const target = acquireTarget(state, e, weapon, weapon.range);
     e.targetId = target?.id ?? null;
     if (target) fire(state, e, target, weapon);
-    return;
+    return null;
   }
 
   // Units: engage anything in detection range, otherwise advance on the enemy Headquarters.
@@ -81,13 +102,13 @@ function updateEntity(state: BattleState, e: Entity, dt: number, blocked: Uint8A
   e.targetId = target?.id ?? null;
 
   if (target && weapon && distance(e.pos, target.pos) <= weapon.range) {
-    e.facing = angleFrom(e.pos, target.pos);
+    const facing = angleFrom(e.pos, target.pos);
     if (e.cooldownMs <= 0) fire(state, e, target, weapon);
-    return;
+    return { e, facing };
   }
 
   const goal = movementGoal(state, e, target);
-  if (goal) moveAlong(e, goal, def.speed, dt, blocked);
+  return goal ? { e, move: { goal, speed: def.speed } } : null;
 }
 
 /** Where a unit wants to go this tick. Null means hold position. */

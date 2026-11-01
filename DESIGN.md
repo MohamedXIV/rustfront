@@ -157,10 +157,20 @@ Gun Truck is merged into Assault Buggy. The Headquarters is not a card.
 - Subscriptions for match-scoped state. Client interpolation for smooth movement.
 - Configurable server tick rate. Scheduled reducers kept minimal to stay within the free tier.
 
+## Simulation Rules (implemented in `shared/sim`)
+
+- Fixed 100 ms tick. Each tick runs: waves, abilities, emitter fields, then every unit attacks using start-of-tick positions and facings, then every unit turns and moves, then mines trigger, then deaths and the outcome are settled.
+- Attacks are simultaneous. Entity id order never gives one side a first strike.
+- Units deploy at the centre of the cell the player points at. Sub-cell click position has no effect.
+- Pathfinding: A* on a 1 m grid, 8 directions, no corner cutting. Replans once per second, or when the next waypoint becomes blocked. Units hold if the goal is unreachable.
+- Targeting: a unit keeps its current target while it is valid. Otherwise it takes the nearest valid enemy in range. Structures and units are targetable only while alive and not concealed.
+- Projectiles resolve instantly for now. Travel time for physical projectiles is not modeled yet.
+- Headquarters destruction ends the match at once. Both Headquarters falling in the same tick is a draw.
+
 ## Open Decisions
 
 1. How the Scrappunk → Dieselpunk progression works in gameplay without pay-to-win.
 2. Exact Radar Tower effect and how Artillery accuracy scales with it.
-3. Pathfinding approach on a freeform battlefield with a placement grid.
+3. ~~Pathfinding approach~~ Resolved: A* on a 1 m grid (see Simulation Rules).
 4. Reconnect grace period length and forfeit rules.
 5. Matchmaking details (room codes first, quick match after).

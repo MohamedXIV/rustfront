@@ -3,7 +3,7 @@ import { getCard, getStructure, getUnit } from '../data';
 import { trySpend } from '../rules/economy';
 import { playCard as removeFromHand, storeCard as moveToStored, type HandState } from '../rules/hand';
 import type { CardInstance, TeamId } from '../types';
-import { ARENA, cellOf, type Cell } from './arena';
+import { ARENA, cellCentre, cellOf, type Cell } from './arena';
 import { scheduleAbility } from './abilities';
 import type { Vec2 } from './geometry';
 import { abilityTargetError, structurePlacementError, unitDeployError } from './placement';
@@ -30,7 +30,7 @@ function validate(state: BattleState, team: TeamId, action: PlayAction, cardId: 
     case 'structure':
       return structurePlacementError(state, team, cardId, action.origin);
     case 'unit':
-      return unitDeployError(state, team, action.pos);
+      return unitDeployError(state, team, cellCentre(action.pos));
     case 'ability':
       return abilityTargetError(action.pos);
   }
@@ -63,13 +63,14 @@ function commit(state: BattleState, team: TeamId, action: PlayAction, cardId: st
     }
     case 'unit': {
       const def = getUnit(cardId);
+      const centre = cellCentre(action.pos);
       for (let i = 0; i < def.spawnCount; i++) {
-        // Multi-body units (e.g. drone swarms) fan out around the deploy point.
+        // Multi-body units (e.g. drone swarms) fan out around the cell centre.
         const angle = (2 * Math.PI * i) / def.spawnCount;
         const offset = def.spawnCount > 1 ? 0.8 : 0;
         const pos = clampToArena({
-          x: action.pos.x + Math.cos(angle) * offset,
-          y: action.pos.y + Math.sin(angle) * offset,
+          x: centre.x + Math.cos(angle) * offset,
+          y: centre.y + Math.sin(angle) * offset,
         });
         spawnEntity(state, { team, defId: cardId, kind: 'unit', origin: cellOf(pos), pos });
       }

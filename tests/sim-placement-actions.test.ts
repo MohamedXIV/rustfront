@@ -85,6 +85,19 @@ describe('playing cards', () => {
     expect(state.teams.red.hand.hand).toHaveLength(1);
   });
 
+  it('snaps unit deployments to the cell centre, so mirrored clicks mirror exactly', () => {
+    const state = createMatch(2);
+    withHand(state, 'red', [card('r1', 'medium_tank')]);
+    withHand(state, 'blue', [card('b1', 'medium_tank')]);
+    expect(tryPlayCard(state, 'red', { kind: 'unit', instanceId: 'r1', pos: { x: 12.3, y: 19.8 } })).toEqual({ ok: true });
+    expect(tryPlayCard(state, 'blue', { kind: 'unit', instanceId: 'b1', pos: { x: 51.7, y: 19.8 } })).toEqual({ ok: true });
+    const tanks = [...state.entities.values()].filter((e) => e.defId === 'medium_tank');
+    const red = tanks.find((e) => e.team === 'red');
+    const blue = tanks.find((e) => e.team === 'blue');
+    expect(red?.pos).toEqual({ x: 12.5, y: 19.5 });
+    expect(blue?.pos).toEqual({ x: 51.5, y: 19.5 });
+  });
+
   it('refuses a card the player does not hold', () => {
     const state = createMatch(2);
     withHand(state, 'red', []);

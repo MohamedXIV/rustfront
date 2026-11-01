@@ -53,6 +53,11 @@ export function cellOf(p: Vec2): Cell {
   return { x: Math.floor(p.x), y: Math.floor(p.y) };
 }
 
+/** Centre of the cell containing p. Units snap here so sub-cell click position never matters. */
+export function cellCentre(p: Vec2): Vec2 {
+  return { x: Math.floor(p.x) + 0.5, y: Math.floor(p.y) + 0.5 };
+}
+
 export function cellIndex(c: Cell): number {
   return c.y * ARENA.width + c.x;
 }
