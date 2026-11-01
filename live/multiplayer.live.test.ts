@@ -65,7 +65,7 @@ describe('two players, one battle', () => {
         [...red.conn.db.entity.iter()].filter((e) => e.team === 'red' && e.kind === 'unit').length;
 
       // Lobby: red creates, blue joins by code, both ready up.
-      red.conn.reducers.createRoom();
+      red.conn.reducers.createRoom({});
       const redSeat = await waitFor('red seat', () => seatOf(red));
       const room = await waitFor('room', () => [...red.conn.db.room.iter()].find((r) => r.id === redSeat.roomId));
       expect(room.code).toHaveLength(6);
