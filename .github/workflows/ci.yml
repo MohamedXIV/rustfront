@@ -25,6 +25,8 @@ jobs:
     name: SpacetimeDB module publish
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: write # Commits regenerated client bindings on pushes to main.
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -62,6 +64,18 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
           cd server
           spacetime generate --lang typescript --module-path . --out-dir ../src/module_bindings
+      - name: Commit regenerated bindings
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/module_bindings
+          if git diff --cached --quiet; then
+            echo "Bindings unchanged"
+          else
+            git commit -m "Regenerate client bindings from the server module [skip ci]"
+            git push origin HEAD:main
+          fi
       - name: Upload generated client bindings
         if: always()
         uses: actions/upload-artifact@v4
