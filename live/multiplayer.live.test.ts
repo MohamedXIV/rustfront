@@ -65,18 +65,18 @@ describe('two players, one battle', () => {
         [...red.conn.db.entity.iter()].filter((e) => e.team === 'red' && e.kind === 'unit').length;
 
       // Lobby: red creates, blue joins by code, both ready up.
-      red.conn.reducers.createRoom({});
+      await red.conn.reducers.createRoom({});
       const redSeat = await waitFor('red seat', () => seatOf(red));
       const room = await waitFor('room', () => [...red.conn.db.room.iter()].find((r) => r.id === redSeat.roomId));
       expect(room.code).toHaveLength(6);
 
-      blue.conn.reducers.joinRoom({ code: room.code });
+      await blue.conn.reducers.joinRoom({ code: room.code });
       const blueSeat = await waitFor('blue seat', () => seatOf(blue));
       expect(blueSeat.roomId).toBe(room.id);
       expect(blueSeat.team).toBe('blue');
 
-      red.conn.reducers.setReady({ ready: true });
-      blue.conn.reducers.setReady({ ready: true });
+      await red.conn.reducers.setReady({ ready: true });
+      await blue.conn.reducers.setReady({ ready: true });
       const battle = await waitFor('battle', () =>
         [...red.conn.db.battle.iter()].find((b) => b.roomId === room.id),
       );
@@ -101,20 +101,22 @@ describe('two players, one battle', () => {
         90_000,
       );
       const unitsBefore = redUnits();
-      red.conn.reducers.playCard({ instanceId: unit.instanceId, x: 12.5, y: 19.5 });
+      await red.conn.reducers.playCard({ instanceId: unit.instanceId, x: 12.5, y: 19.5 });
       await waitFor('red unit deployed', () => redUnits() > unitsBefore);
 
       // Another player cannot play a card they do not hold.
       const leftover = myCards(red).find((c) => c.instanceId !== unit.instanceId);
       expect(leftover).toBeDefined();
       const unitsAfter = redUnits();
-      blue.conn.reducers.playCard({ instanceId: leftover!.instanceId, x: 51.5, y: 19.5 });
-      await new Promise((r) => setTimeout(r, 2000));
+      await expect(
+        blue.conn.reducers.playCard({ instanceId: leftover!.instanceId, x: 51.5, y: 19.5 }),
+      ).rejects.toThrow(/not available/);
+      await new Promise((r) => setTimeout(r, 1000));
       expect(redUnits()).toBe(unitsAfter);
       expect(myCards(blue).some((c) => c.instanceId === leftover!.instanceId)).toBe(false);
 
       // Store a card. It moves to the stored zone and stays visible to its owner only.
-      red.conn.reducers.storeCard({ instanceId: leftover!.instanceId });
+      await red.conn.reducers.storeCard({ instanceId: leftover!.instanceId });
       await waitFor('stored card', () =>
         myCards(red).find((c) => c.instanceId === leftover!.instanceId && c.zone === 'stored'),
       );
