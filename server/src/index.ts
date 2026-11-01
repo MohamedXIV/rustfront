@@ -301,7 +301,8 @@ export const myEntities = db.view({ name: 'my_entities', public: true }, t.array
 });
 
 // Named because it is used only inside a view. A row that is not a table needs a type name.
-const myBattleRow = t.row('MyBattle', {
+// The name must differ from the view's own name ("MyBattle"), which the SDK derives from the export.
+const myBattleRow = t.row('MyBattleRow', {
   id: t.u64(),
   roomId: t.u64(),
   status: t.string(),
