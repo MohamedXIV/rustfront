@@ -1,7 +1,10 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 
 export default defineConfig({
   server: { port: 5173 },
+  // Unit tests only. Live multiplayer tests run from vitest.live.config.ts.
+  test: { include: ['tests/**/*.test.ts'] },
   build: {
     target: 'es2022',
     sourcemap: false,

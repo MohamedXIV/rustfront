@@ -62,6 +62,10 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
           cd server
           spacetime generate --lang typescript --module-path . --out-dir ../src/module_bindings
+      - name: Typecheck live tests
+        run: npm run typecheck:live
+      - name: Run live multiplayer tests
+        run: npm run test:live
       - name: Show server log on failure
         if: failure()
         run: cat "$RUNNER_TEMP/spacetime.log" || true

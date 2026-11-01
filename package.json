@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit && tsc -p server/tsconfig.json --noEmit",
     "test": "vitest run",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:live": "vitest run --config vitest.live.config.ts",
+    "typecheck:live": "tsc -p live/tsconfig.json --noEmit"
   },
   "dependencies": {
     "phaser": "^4.2.1",

@@ -6,5 +6,6 @@ export * from './combat';
 export * from './geometry';
 export * from './pathfinding';
 export * from './placement';
+export * from './snapshot';
 export * from './state';
 export * from './tick';
