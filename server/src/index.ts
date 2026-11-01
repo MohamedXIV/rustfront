@@ -139,11 +139,14 @@ const cardRow = t.row({
 });
 const card = table({ name: 'card' }, cardRow);
 
-const tickRow = {
-  scheduledId: t.u64().primaryKey().autoInc(),
-  scheduledAt: t.scheduleAt(),
-};
-const tickSchedule = table({ name: 'tick_schedule', scheduled: (): any => tick }, tickRow);
+/** Schedule rows. The tick reducer below is bound to this table through onSchedule. */
+const tickSchedule = table(
+  { name: 'tick_schedule' },
+  {
+    scheduledId: t.u64().primaryKey().autoInc(),
+    scheduledAt: t.scheduleAt(),
+  },
+);
 
 const db = schema({
   player,
@@ -246,7 +249,7 @@ export const storeCard = db.reducer({ instanceId: t.string() }, (ctx, { instance
 });
 
 /** Advances every running battle by one tick. Scheduled, so it runs on the server clock. */
-export const tick = db.reducer(tickRow, (ctx, _row) => {
+export const tick = db.reducer({ onSchedule: tickSchedule }, { scheduled: tickSchedule.rowType }, (ctx, _args) => {
   for (const b of [...ctx.db.battle.iter()]) {
     if (b.status !== 'active') continue;
     const state = loadBattle(ctx, b.id);
