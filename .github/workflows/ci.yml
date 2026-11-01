@@ -55,11 +55,13 @@ jobs:
       - name: Publish module
         run: |
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
-          spacetime publish rustfront-ci --project-path server --server local -y
+          cd server
+          spacetime publish rustfront-ci --server local -y
       - name: Generate client bindings
         run: |
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
-          spacetime generate --lang typescript --out-dir src/module_bindings --project-path server
+          cd server
+          spacetime generate --lang typescript --out-dir ../src/module_bindings
       - name: Show server log on failure
         if: failure()
         run: cat "$RUNNER_TEMP/spacetime.log" || true
