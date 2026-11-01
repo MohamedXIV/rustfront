@@ -62,6 +62,13 @@ jobs:
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
           cd server
           spacetime generate --lang typescript --module-path . --out-dir ../src/module_bindings
+      - name: Upload generated client bindings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: module-bindings
+          path: src/module_bindings
+          if-no-files-found: warn
       - name: Typecheck live tests
         run: npm run typecheck:live
       - name: Run live multiplayer tests

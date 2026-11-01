@@ -205,8 +205,19 @@ export const joinRoom = db.reducer({ code: t.string() }, (ctx, { code }) => {
   const found = ctx.db.room.code.find(code.trim().toUpperCase());
   if (!found) throw new SenderError('No room with that code');
   if (found.status !== 'lobby') throw new SenderError('That room has already started');
-  if ([...ctx.db.seat.roomId.filter(found.id)].length >= 2) throw new SenderError('That room is full');
-  ctx.db.seat.insert({ id: 0n, roomId: found.id, identity: ctx.sender, team: 'blue', ready: false });
+  const taken = [...ctx.db.seat.roomId.filter(found.id)];
+  if (taken.length >= 2) throw new SenderError('That room is full');
+  // Take whichever side is free. The creator's seat may have left, which frees red.
+  const team: TeamId = taken.some((s) => s.team === 'red') ? 'blue' : 'red';
+  ctx.db.seat.insert({ id: 0n, roomId: found.id, identity: ctx.sender, team, ready: false });
+});
+
+export const leaveRoom = db.reducer({}, (ctx) => {
+  const mine = seatOf(ctx);
+  const lobby = ctx.db.room.id.find(mine.roomId);
+  if (lobby && lobby.status === 'playing') throw new SenderError('Finish the battle before leaving');
+  ctx.db.seat.id.delete(mine.id);
+  if (lobby && [...ctx.db.seat.roomId.filter(lobby.id)].length === 0) ctx.db.room.id.delete(lobby.id);
 });
 
 export const setReady = db.reducer({ ready: t.bool() }, (ctx, { ready }) => {
