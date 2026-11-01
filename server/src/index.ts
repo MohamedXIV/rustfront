@@ -51,8 +51,12 @@ const seat = table(
   },
 );
 
+/**
+ * The battle row. Private: it holds the RNG state (which would reveal future waves) and both players' points.
+ * Clients read their own battle through my_battle, which carries only their own balance.
+ */
 const battle = table(
-  { name: 'battle', public: true },
+  { name: 'battle' },
   {
     id: t.u64().primaryKey().autoInc(),
     roomId: t.u64().index('btree'),
@@ -72,27 +76,29 @@ const battle = table(
   },
 );
 
-const entity = table(
-  { name: 'entity', public: true },
-  {
-    key: t.string().primaryKey(), // `${battleId}:${id}`
-    battleId: t.u64().index('btree'),
-    id: t.u32(),
-    team: t.string(),
-    defId: t.string(),
-    kind: t.string(),
-    layer: t.string(),
-    originX: t.u32(),
-    originY: t.u32(),
-    posX: t.f64(),
-    posY: t.f64(),
-    facing: t.f64(),
-    hp: t.f64(),
-    maxHp: t.f64(),
-    disabledUntilMs: t.f64(),
-    concealedUntilMs: t.f64(),
-  },
-);
+/**
+ * Entity rows. Private: enemy mines and concealed enemy units must not reach the other client.
+ * Clients read entities through my_entities, which filters them per viewer.
+ */
+const entityRow = t.row({
+  key: t.string().primaryKey(), // `${battleId}:${id}`
+  battleId: t.u64().index('btree'),
+  id: t.u32(),
+  team: t.string(),
+  defId: t.string(),
+  kind: t.string(),
+  layer: t.string(),
+  originX: t.u32(),
+  originY: t.u32(),
+  posX: t.f64(),
+  posY: t.f64(),
+  facing: t.f64(),
+  hp: t.f64(),
+  maxHp: t.f64(),
+  disabledUntilMs: t.f64(),
+  concealedUntilMs: t.f64(),
+});
+const entity = table({ name: 'entity' }, entityRow);
 
 /** Simulation-only entity state. Private. */
 const entityAi = table(
@@ -276,6 +282,62 @@ export const myHand = db.view({ name: 'my_hand', public: true }, t.array(cardRow
   const lobby = ctx.db.room.id.find(mine.roomId);
   if (!lobby || lobby.battleId === 0n) return [];
   return [...ctx.db.card.battleId.filter(lobby.battleId)].filter((c) => c.team === mine.team);
+});
+
+/**
+ * Entities the caller may see: all of their own, and the enemy's structures and units that are not concealed.
+ * Enemy mines are never visible. Matches the rule the simulation uses for targeting.
+ */
+export const myEntities = db.view({ name: 'my_entities', public: true }, t.array(entityRow), (ctx) => {
+  const mine = ctx.db.seat.identity.find(ctx.sender);
+  if (!mine) return [];
+  const lobby = ctx.db.room.id.find(mine.roomId);
+  if (!lobby || lobby.battleId === 0n) return [];
+  const b = ctx.db.battle.id.find(lobby.battleId);
+  if (!b) return [];
+  return [...ctx.db.entity.battleId.filter(lobby.battleId)].filter(
+    (e) => e.team === mine.team || (e.kind !== 'mine' && e.concealedUntilMs <= b.elapsedMs),
+  );
+});
+
+const myBattleRow = t.row({
+  id: t.u64(),
+  roomId: t.u64(),
+  status: t.string(),
+  team: t.string(),
+  elapsedMs: t.f64(),
+  nextWaveAtMs: t.f64(),
+  winner: t.string(),
+  endReason: t.string(),
+  redHqId: t.u32(),
+  blueHqId: t.u32(),
+  /** The caller's own points only. The opponent's balance is private. */
+  points: t.f64(),
+});
+
+/** The caller's battle, with only the fields the caller may know. */
+export const myBattle = db.view({ name: 'my_battle', public: true }, t.array(myBattleRow), (ctx) => {
+  const mine = ctx.db.seat.identity.find(ctx.sender);
+  if (!mine) return [];
+  const lobby = ctx.db.room.id.find(mine.roomId);
+  if (!lobby || lobby.battleId === 0n) return [];
+  const b = ctx.db.battle.id.find(lobby.battleId);
+  if (!b) return [];
+  return [
+    {
+      id: b.id,
+      roomId: b.roomId,
+      status: b.status,
+      team: mine.team,
+      elapsedMs: b.elapsedMs,
+      nextWaveAtMs: b.nextWaveAtMs,
+      winner: b.winner,
+      endReason: b.endReason,
+      redHqId: b.redHqId,
+      blueHqId: b.blueHqId,
+      points: mine.team === 'red' ? b.redPoints : b.bluePoints,
+    },
+  ];
 });
 
 function seatOf(ctx: Ctx) {

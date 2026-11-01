@@ -33,8 +33,8 @@ async function subscribe(conn: DbConnection): Promise<void> {
         'SELECT * FROM player',
         'SELECT * FROM room',
         'SELECT * FROM seat',
-        'SELECT * FROM battle',
-        'SELECT * FROM entity',
+        'SELECT * FROM my_battle',
+        'SELECT * FROM my_entities',
         'SELECT * FROM pending_ability',
         'SELECT * FROM my_hand',
       ]);
@@ -62,7 +62,7 @@ describe('two players, one battle', () => {
       const seatOf = (c: Client) => [...c.conn.db.seat.iter()].find((s) => s.identity.toHexString() === c.hex);
       const myCards = (c: Client) => [...c.conn.db.myHand.iter()];
       const redUnits = () =>
-        [...red.conn.db.entity.iter()].filter((e) => e.team === 'red' && e.kind === 'unit').length;
+        [...red.conn.db.myEntities.iter()].filter((e) => e.team === 'red' && e.kind === 'unit').length;
 
       // Lobby: red creates, blue joins by code, both ready up.
       await red.conn.reducers.createRoom({});
@@ -78,9 +78,19 @@ describe('two players, one battle', () => {
       await red.conn.reducers.setReady({ ready: true });
       await blue.conn.reducers.setReady({ ready: true });
       const battle = await waitFor('battle', () =>
-        [...red.conn.db.battle.iter()].find((b) => b.roomId === room.id),
+        [...red.conn.db.myBattle.iter()].find((b) => b.roomId === room.id),
       );
       expect(battle.status).toBe('active');
+      // Each player's battle row carries only their own balance. The RNG state and the opponent's points stay private.
+      expect(battle).toHaveProperty('points');
+      expect(battle).not.toHaveProperty('bluePoints');
+      expect(battle).not.toHaveProperty('rngState');
+      const blueBattle = await waitFor('blue battle', () =>
+        [...blue.conn.db.myBattle.iter()].find((b) => b.roomId === room.id),
+      );
+      expect(blueBattle.team).toBe('blue');
+      // Blue sees no mines of red's. Red's mines are never visible to the other player.
+      expect([...blue.conn.db.myEntities.iter()].some((e) => e.kind === 'mine' && e.team === 'red')).toBe(false);
 
       // Hands: each player sees only their own team's cards.
       const redHand = await waitFor('red hand', () => {
@@ -123,10 +133,10 @@ describe('two players, one battle', () => {
 
       // The battle ticks and both Headquarters are on the board.
       await waitFor('battle ticking', () => {
-        const b = [...red.conn.db.battle.iter()].find((x) => x.id === battle.id);
+        const b = [...red.conn.db.myBattle.iter()].find((x) => x.id === battle.id);
         return b && b.elapsedMs >= 3000 ? b : undefined;
       });
-      const headquarters = [...red.conn.db.entity.iter()].filter(
+      const headquarters = [...red.conn.db.myEntities.iter()].filter(
         (e) => e.kind === 'structure' && e.defId === 'headquarters',
       );
       expect(headquarters.map((h) => h.team).sort()).toEqual(['blue', 'red']);
