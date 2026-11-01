@@ -45,8 +45,8 @@ import StoreCardReducer from "./store_card_reducer";
 // Import all procedure arg schemas
 
 // Import all table schema definitions
-import BattleRow from "./battle_table";
-import EntityRow from "./entity_table";
+import MyBattleRow from "./my_battle_table";
+import MyEntitiesRow from "./my_entities_table";
 import MyHandRow from "./my_hand_table";
 import PendingAbilityRow from "./pending_ability_table";
 import PlayerRow from "./player_table";
@@ -57,34 +57,6 @@ import SeatRow from "./seat_table";
 
 /** The schema information for all tables in this module. This is defined the same was as the tables would have been defined in the server. */
 const tablesSchema = __schema({
-  battle: __table({
-    name: 'battle',
-    indexes: [
-      { accessor: 'id', name: 'battle_id_idx_btree', algorithm: 'btree', columns: [
-        'id',
-      ] },
-      { accessor: 'roomId', name: 'battle_room_id_idx_btree', algorithm: 'btree', columns: [
-        'roomId',
-      ] },
-    ],
-    constraints: [
-      { name: 'battle_id_key', constraint: 'unique', columns: ['id'] },
-    ],
-  }, BattleRow),
-  entity: __table({
-    name: 'entity',
-    indexes: [
-      { accessor: 'battleId', name: 'entity_battle_id_idx_btree', algorithm: 'btree', columns: [
-        'battleId',
-      ] },
-      { accessor: 'key', name: 'entity_key_idx_btree', algorithm: 'btree', columns: [
-        'key',
-      ] },
-    ],
-    constraints: [
-      { name: 'entity_key_key', constraint: 'unique', columns: ['key'] },
-    ],
-  }, EntityRow),
   pendingAbility: __table({
     name: 'pending_ability',
     indexes: [
@@ -143,6 +115,20 @@ const tablesSchema = __schema({
       { name: 'seat_identity_key', constraint: 'unique', columns: ['identity'] },
     ],
   }, SeatRow),
+  myBattle: __table({
+    name: 'my_battle',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyBattleRow),
+  myEntities: __table({
+    name: 'my_entities',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, MyEntitiesRow),
   myHand: __table({
     name: 'my_hand',
     indexes: [

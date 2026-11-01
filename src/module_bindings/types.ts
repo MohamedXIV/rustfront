@@ -76,6 +76,27 @@ export const EntityAi = __t.object("EntityAi", {
 });
 export type EntityAi = __Infer<typeof EntityAi>;
 
+export const MyBattle = __t.object("MyBattle", {});
+export type MyBattle = __Infer<typeof MyBattle>;
+
+export const MyBattleRow = __t.object("MyBattleRow", {
+  id: __t.u64(),
+  roomId: __t.u64(),
+  status: __t.string(),
+  team: __t.string(),
+  elapsedMs: __t.f64(),
+  nextWaveAtMs: __t.f64(),
+  winner: __t.string(),
+  endReason: __t.string(),
+  redHqId: __t.u32(),
+  blueHqId: __t.u32(),
+  points: __t.f64(),
+});
+export type MyBattleRow = __Infer<typeof MyBattleRow>;
+
+export const MyEntities = __t.object("MyEntities", {});
+export type MyEntities = __Infer<typeof MyEntities>;
+
 export const MyHand = __t.object("MyHand", {});
 export type MyHand = __Infer<typeof MyHand>;
 
