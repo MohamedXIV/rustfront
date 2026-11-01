@@ -42,7 +42,7 @@ jobs:
       - name: Check CLI version
         run: |
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
-          spacetime version
+          spacetime --version
       - name: Start local SpacetimeDB
         run: |
           export PATH="$HOME/.local/bin:$HOME/.spacetime/bin:$PATH"
