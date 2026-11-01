@@ -300,7 +300,8 @@ export const myEntities = db.view({ name: 'my_entities', public: true }, t.array
   );
 });
 
-const myBattleRow = t.row({
+// Named because it is used only inside a view. A row that is not a table needs a type name.
+const myBattleRow = t.row('MyBattle', {
   id: t.u64(),
   roomId: t.u64(),
   status: t.string(),
